@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-guestbook}
+      POSTGRES_USER: ${POSTGRES_USER:-guestbook}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-guestbook_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-guestbook} -d ${POSTGRES_DB:-guestbook}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  app:
+    build: .
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-guestbook}:${POSTGRES_PASSWORD:-guestbook_password}@db:5432/${POSTGRES_DB:-guestbook}}
+      GREETING: ${GREETING:-Добро пожаловать в гостевую книгу!}
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
