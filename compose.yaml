@@ -17,9 +17,10 @@ services:
 
   app:
     build: .
+    image: ${IMAGE_NAME:-ghcr.io/l4yerzer0/guestbook-workshop}:${IMAGE_TAG:-latest}
     restart: always
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:8000"
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-guestbook}:${POSTGRES_PASSWORD:-guestbook_password}@db:5432/${POSTGRES_DB:-guestbook}}
       GREETING: ${GREETING:-Добро пожаловать в гостевую книгу!}

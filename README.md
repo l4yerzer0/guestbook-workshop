@@ -1,74 +1,109 @@
-# 📒 guestbook — стартовый репозиторий воркшопа
+# 📒 Guestbook Service
 
-Небольшая **гостевая книга** на FastAPI: можно оставить сообщение и посмотреть все оставленные. Данные хранятся в PostgreSQL.
+[![CI/CD Pipeline](https://github.com/l4yerzer0/guestbook-workshop/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/l4yerzer0/guestbook-workshop/actions/workflows/ci-cd.yml)
+[![Docker Image](https://img.shields.io/badge/GHCR-guestbook--workshop-blue?logo=docker)](https://github.com/l4yerzer0/guestbook-workshop/pkgs/container/guestbook-workshop)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-## Что умеет
+Надёжный production-ready сервис гостевой книги на **FastAPI** и **PostgreSQL**, упакованный в Docker с настроенным CI/CD конвейером, автоматическим версионированием, персистентным хранилищем и процедурой безаварийного отката (Zero-Downtime Rollback).
 
-- `GET /` — приветствие
-- `GET /health` — проверка «жив ли сервис»
-- `GET /messages` — список сообщений (новые сверху)
-- `POST /messages` — добавить сообщение: тело `{"author": "...", "text": "..."}`
+---
 
-## Текущее состояние: «работает у меня»
+## 🛠 Технологический стек
 
-Честно предупреждаем: сейчас проект заводится только у автора и только если звёзды сошлись. А именно:
+- **Бэкенд:** Python 3.12, FastAPI, Psycopg 3, Pydantic Settings
+- **Управление зависимостями:** [uv](https://github.com/astral-sh/uv) (`pyproject.toml` + `uv.lock`)
+- **База данных:** PostgreSQL 16 Alpine
+- **Контейнеризация:** Docker (Multi-stage layer caching), Docker Compose
+- **Качество кода:** Ruff (Linter & Formatter), Pytest, HTTPX
+- **CI/CD:** GitHub Actions (автоматический линтинг, тесты с сервисным контейнером БД, сборка и публикация в GitHub Container Registry `ghcr.io`)
+- **Документация:** [RUNBOOK.md](RUNBOOK.md) (аварийные регламенты и откат), [CHANGELOG.md](CHANGELOG.md) (SemVer)
 
-- зависимости лежат в `requirements.txt` и никак не зафиксированы;
-- адрес базы и **пароль зашиты прямо в `main.py`**;
-- нет ни `Dockerfile`, ни `compose.yaml` — базу нужно поднимать и настраивать руками;
-- нет `.gitignore`, нет `.env`.
+---
 
-Вот как автор запускает это у себя (и почему так оставлять нельзя):
+## 🚀 Быстрый запуск
 
+### 1. Клонирование и настройка окружения
 ```bash
-pip install -r requirements.txt
-# ... где-то локально поднят PostgreSQL с базой guestbook и тем самым паролем из кода ...
-uvicorn main:app
-```
-
-## 🎯 Ваша задача
-
-**Нужно получить** тот же проект, доведённый до прода:
-
-- зависимости зафиксированы через **uv** (`pyproject.toml` + `uv.lock`), версия Python закреплена;
-- есть **Dockerfile** и **.dockerignore**, образ собирается;
-- есть **compose.yaml**, поднимающий приложение **и** PostgreSQL одной командой, с правильным порядком запуска и хранением данных;
-- настройки собраны в один конфиг на **pydantic-settings**, в коде нет `os.environ` вразнобой;
-- **секретов нет ни в коде, ни в коммите**: они живут в `.env` (в `.gitignore`), а в репозитории лежит `.env.example`.
-
-**Бизнес-логику менять не нужно** (эндпоинты и SQL уже работают) — вы работаете с упаковкой, конфигурацией и запуском.
-
-## 🚀 Как начать
-
-1. Форкните репозиторий воркшопа к себе (кнопка **Fork**).
-2. Склонируйте форк и заведите рабочую ветку:
-
-```bash
-git clone https://github.com/ВАШ-ЛОГИН/guestbook-workshop.git
+git clone https://github.com/l4yerzer0/guestbook-workshop.git
 cd guestbook-workshop
-git switch -c to-prod
+
+# Создать локальный .env из шаблона
+cp .env.example .env
 ```
 
-3. Выполнить задание, сверяясь с критериями.
+### 2. Запуск через Docker Compose
+```bash
+# Собрать и запустить сервис и базу данных в фоновом режиме
+docker compose up -d --build
 
-## ✅ Критерии готовности
+# Проверить статус контейнеров
+docker compose ps
+```
 
-- [x] Зависимости на **uv**: есть `pyproject.toml` и `uv.lock`, `requirements.txt` удалён, версия Python закреплена (`.python-version`)
-- [x] Есть **`.gitignore`** с `.venv`, `.env`, `__pycache__`
-- [x] Настройки собраны в **`config.py`** (pydantic-settings); в `main.py` нет зашитых адреса и пароля
-- [x] Секретов нет ни в коде, ни в коммите: `.env` в `.gitignore`, в репозитории есть **`.env.example`**, в `compose.yaml` пароль через **`${...}`**
-- [x] Есть **`Dockerfile`** (зависимости ставятся до кода, `--host 0.0.0.0`) и **`.dockerignore`** (без `.env`, `.git`, `.venv`)
-- [x] **`compose.yaml`** поднимает `app` + `db`; наружу проброшен только `app`; есть `depends_on: service_healthy`, `healthcheck` и `volume`
-- [x] **Приёмочный тест пройден:** сообщение добавляется, отображается и переживает `down`/`up`
-- [x] `git grep -i supersecret` не находит ничего; работа влита в `main` через merge
+Сервис будет доступен по адресу `http://localhost:8000`.
 
-## 🏁 Как завершить
+---
+
+## 📡 API Эндпоинты
+
+| Метод | Путь | Описание | Пример ответа / Тела |
+|---|---|---|---|
+| `GET` | `/` | Приветственное сообщение | `{"message": "Добро пожаловать в гостевую книгу!"}` |
+| `GET` | `/health` | Проверка жизнеспособности сервиса | `{"status": "ok"}` |
+| `GET` | `/messages` | Список сообщений (новые сверху) | `[{"author": "Alice", "text": "Привет!"}]` |
+| `POST` | `/messages` | Добавить новое сообщение | `{"author": "Bob", "text": "Текст сообщения"}` |
+
+### Примеры запросов:
+```bash
+# Проверить здоровье
+curl http://localhost:8000/health
+
+# Оставить запись
+curl -X POST http://localhost:8000/messages \
+  -H "Content-Type: application/json" \
+  -d '{"author": "DevOps Lead", "text": "Production ready!"}'
+
+# Посмотреть записи
+curl http://localhost:8000/messages
+```
+
+---
+
+## 🧪 Локальная разработка и тесты
+
+Для управления локальным окружением используется утилита `uv`:
 
 ```bash
-git add .
-git commit -m "chore: гостевая книга доведена до прода (uv, Docker, Compose, конфиг)"
-git switch main
-git merge to-prod
-git push -u origin main
+# Установить зависимости, включая dev-инструменты
+uv sync
+
+# Запуск линтера и проверка форматирования
+uv run ruff check .
+uv run ruff format --check .
+
+# Запуск тестов
+uv run pytest -v
 ```
 
+---
+
+## 🔄 CI/CD Конвейер и релизы
+
+В проекте настроен автоматический пайплайн в [.github/workflows/ci-cd.yml](.github/workflows/ci-cd.yml):
+
+1. **CI (`check`)**: запускается на каждый `push` и `pull_request`:
+   - Запускает сервис PostgreSQL 16.
+   - Проверяет код с помощью `ruff check` и `ruff format --check`.
+   - Прогоняет полный набор тестов `pytest`.
+2. **CD (`build-and-push`)**: срабатывает **только после успешного CI** (`needs: check`):
+   - При пуше в ветку `main` собирает Docker-образ и публикует в `ghcr.io` с тегом `:latest` и `:sha`.
+   - При создании тега версии вида `vX.Y.Z` (SemVer) собирает релизный образ с тегом `vX.Y.Z`.
+
+---
+
+## 📖 Эксплуатация и регламенты
+
+Подробные инструкции по диагностике, мониторингу, плановому выкату и экстренному откату версий (Rollback) описаны в **[RUNBOOK.md](RUNBOOK.md)**.
+История изменений версий ведётся в **[CHANGELOG.md](CHANGELOG.md)**.
