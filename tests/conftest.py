@@ -59,7 +59,9 @@ def db_session(monkeypatch):
 
     if use_mock:
         storage: List[dict] = []
-        monkeypatch.setattr("main.connect", lambda: FakeConnection(storage))
+        monkeypatch.setattr(
+            "main.connect", lambda *args, **kwargs: FakeConnection(storage)
+        )
 
 
 @pytest.fixture

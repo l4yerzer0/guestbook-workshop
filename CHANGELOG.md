@@ -9,6 +9,14 @@
 
 ## [Unreleased]
 
+### Added
+- **Observability & Health Probes**: разделены эндпоинты `/health` (легковесный liveness probe) и `/ready` (readiness probe с проверкой доступности PostgreSQL и ответом 503 при сбое).
+- **Structured JSON Logging**: логирование всех HTTP-запросов в формате JSON через `structlog` без утечки конфиденциальных данных.
+- **RED Metrics**: внедрены счетчик запросов `http_requests_total` и гистограмма задержки `http_request_duration_seconds`, эндпоинт `/metrics` в формате Prometheus.
+- **Monitoring Infrastructure**: в `compose.yaml` добавлены сервисы `prometheus`, `alertmanager` и `grafana` с автоматическим провижинингом источника данных и RED-дашборда из 3 панелей.
+- **Alerting & Webhooks**: настроены правила алертинга (`alert_rules.yml`), Alertmanager пересылает алерты на Pydantic-эндпоинт `/alerts/webhook` с логированием события `alert_received`.
+- **Load Testing**: добавлен сценарий `load-test.js` для k6, переводящий правило алертинга в состояние `firing`.
+
 ---
 
 ## [1.0.0] - 2026-10-15

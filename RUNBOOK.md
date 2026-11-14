@@ -10,23 +10,53 @@
 |---|---|---|---|---|
 | **app** | `ghcr.io/l4yerzer0/guestbook-workshop:${IMAGE_TAG}` | 8000 | 8000 | FastAPI REST API |
 | **db** | `postgres:16-alpine` | 5432 | *закрыт* | СУБД (PostgreSQL) |
+| **prometheus** | `prom/prometheus:v2.54.1` | 9090 | 9090 | Сбор и хранение метрик, вычисление алертов |
+| **alertmanager** | `prom/alertmanager:v0.27.0` | 9093 | 9093 | Маршрутизация и доставка алертов |
+| **grafana** | `grafana/grafana:11.1.0` | 3000 | 3000 | Визуализация (RED-дашборд) |
 | **volume** | `postgres_data` | — | — | Персистентное хранилище БД (`/var/lib/postgresql/data`) |
+| **volume** | `grafana_data` | — | — | Персистентное хранилище Grafana |
 
 ---
 
-## 2. Мониторинг и Healthcheck
+## 2. Мониторинг, Healthcheck и алертинг
 
-- **Liveness/Readiness probe приложения:**
+- **Liveness probe приложения (быстрая проверка процесса):**
   ```bash
   curl -fsS http://localhost:8000/health || echo "APP IS DOWN"
   ```
-  *Ожидаемый ответ:* `{"status": "ok"}` с HTTP-кодом `200`.
+  *Ожидаемый ответ:* `{"status": "ok"}` с кодом `200`.
+
+- **Readiness probe приложения (проверка подключения к БД):**
+  ```bash
+  curl -i http://localhost:8000/ready
+  ```
+  *При рабочей БД:* HTTP 200 `{"status": "ok"}`.
+  *При отключенной БД:* HTTP 503 `{"status": "unavailable", "detail": "Database connection failed"}`.
+
+- **RED-метрики приложения:**
+  ```bash
+  curl http://localhost:8000/metrics
+  ```
+
+- **Панели и UI мониторинга:**
+  - Prometheus: `http://localhost:9090` (проверка состояния target в `Status -> Targets`, алертов в `Alerts`).
+  - Alertmanager: `http://localhost:9093` (активные алерты).
+  - Grafana: `http://localhost:3000` (логин/пароль: `admin` / `admin`, автонастроенный RED-дашборд).
+
+- **Нагрузочное тестирование (k6) для проверки алертинга:**
+  ```bash
+  # Запуск локально через k6 или Docker-контейнер
+  k6 run load-test.js
+  # или через Docker:
+  docker run --rm -i --network=host grafana/k6 run - < load-test.js
+  ```
+  Нагрузка вызывает срабатывание правила `HighRequestRate` (переход в `firing`), Alertmanager отправляет вебхук на `/alerts/webhook`, а сервис регистрирует событие `alert_received` в логах.
 
 - **Проверка статуса контейнеров в Docker:**
   ```bash
   docker compose ps
   ```
-  *Сервис `db` обязан находиться в статусе `Up (healthy)`, а сервис `app` — `Up`.*
+  *Все 5 сервисов обязаны находиться в статусе `Up` (`healthy` для `db`).*
 
 ---
 
