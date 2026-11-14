@@ -1,0 +1,15 @@
+global:
+  resolve_timeout: 1m
+
+route:
+  group_by: ["alertname"]
+  group_wait: 1s
+  group_interval: 2s
+  repeat_interval: 1h
+  receiver: "guestbook-app"
+
+receivers:
+  - name: "guestbook-app"
+    webhook_configs:
+      - url: "http://app:8000/alerts/webhook"
+        send_resolved: true

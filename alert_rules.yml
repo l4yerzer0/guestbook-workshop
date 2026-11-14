@@ -1,0 +1,20 @@
+groups:
+  - name: guestbook_alerts
+    rules:
+      - alert: HighRequestRate
+        expr: sum(rate(http_requests_total[30s])) > 5
+        for: 10s
+        labels:
+          severity: warning
+        annotations:
+          summary: "High request rate detected"
+          description: "Incoming HTTP request rate is {{ $value }} req/s (threshold: > 5 req/s)."
+
+      - alert: ServiceErrorsDetected
+        expr: sum(rate(http_requests_total{status=~"5.."}[30s])) > 0
+        for: 10s
+        labels:
+          severity: critical
+        annotations:
+          summary: "HTTP 5xx server errors detected"
+          description: "Guestbook service is returning 5xx responses."

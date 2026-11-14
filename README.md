@@ -12,9 +12,10 @@
 
 ## 🛠 Технологический стек
 
-- **Бэкенд:** Python 3.12, FastAPI, Psycopg 3, Pydantic Settings
+- **Бэкенд:** Python 3.12, FastAPI, Psycopg 3, Pydantic Settings, Structlog, Prometheus Client
 - **Управление зависимостями:** [uv](https://github.com/astral-sh/uv) (`pyproject.toml` + `uv.lock`)
 - **База данных:** PostgreSQL 16 Alpine
+- **Мониторинг и наблюдаемость:** Prometheus, Alertmanager, Grafana (RED Metrics), k6
 - **Контейнеризация:** Docker (Multi-stage layer caching), Docker Compose
 - **Качество кода:** Ruff (Linter & Formatter), Pytest, HTTPX
 - **CI/CD:** GitHub Actions (автоматический линтинг, тесты с сервисным контейнером БД, сборка и публикация в GitHub Container Registry `ghcr.io`)
@@ -51,7 +52,10 @@ docker compose ps
 | Метод | Путь | Описание | Пример ответа / Тела |
 |---|---|---|---|
 | `GET` | `/` | Приветственное сообщение | `{"message": "Добро пожаловать в гостевую книгу!"}` |
-| `GET` | `/health` | Проверка жизнеспособности сервиса | `{"status": "ok"}` |
+| `GET` | `/health` | Liveness probe (проверка жизни приложения) | `{"status": "ok"}` |
+| `GET` | `/ready` | Readiness probe (проверка доступности БД) | `{"status": "ok"}` (200) или `{"status": "unavailable"}` (503) |
+| `GET` | `/metrics` | Метрики приложения в формате Prometheus | RED-метрики (Counter, Histogram) |
+| `POST` | `/alerts/webhook` | Приёмник алертов от Alertmanager | `{"ok": true, "received": 1}` |
 | `GET` | `/messages` | Список сообщений (новые сверху) | `[{"author": "Alice", "text": "Привет!"}]` |
 | `POST` | `/messages` | Добавить новое сообщение | `{"author": "Bob", "text": "Текст сообщения"}` |
 
